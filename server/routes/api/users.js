@@ -3,6 +3,7 @@ const router = express.Router()
 const gravatar = require('gravatar')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const passport = require('passport')
 
 const keys = require('../../config/keys')
 const User = require('../../models/User')
@@ -34,7 +35,7 @@ router.post('/register', (req, res) => {
           newUser
             .save()
             .then(user => res.json(user))
-            .catch(err => console.error(err))
+            .catch(err => new Error(err))
         })
       })
     }
@@ -62,19 +63,31 @@ router.post('/login', (req, res) => {
         jwt.sign(
           payload,
           keys.secretOrKey,
-          { expiresIn: 60 * 60 * 6 },
+          { expiresIn: 60 * 60 * 6 }, // is equal to 6 hours (seconds are the main INT)
           (err, token) => {
             res.json({
               success: true,
               token: 'Bearer ' + token
             })
           }
-        ) // is equal to 6 hours (seconds are the main INT)
+        )
       } else {
         return res.status(400).json({ password: 'Password incorrect' })
       }
     })
   })
 })
+
+router.get(
+  '/current',
+  passport.authenticate('jwt', { session: false }),
+  (req, res) => {
+    res.json({
+      id: req.user.id,
+      name: req.user.name,
+      email: req.user.email
+    })
+  }
+)
 
 module.exports = router
